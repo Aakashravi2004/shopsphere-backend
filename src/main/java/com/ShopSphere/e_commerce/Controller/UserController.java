@@ -3,6 +3,7 @@ package com.ShopSphere.e_commerce.Controller;
 import com.ShopSphere.e_commerce.Entity.User;
 import com.ShopSphere.e_commerce.Service.UserService;
 import com.ShopSphere.e_commerce.dto.LoginRequestDto;
+import com.ShopSphere.e_commerce.dto.LoginResponseDto;
 import com.ShopSphere.e_commerce.dto.UserRequestDto;
 import com.ShopSphere.e_commerce.dto.UserResponseDto;
 import jakarta.validation.Valid;
@@ -32,7 +33,7 @@ public class UserController {
     }
 
     @PostMapping("/login")
-    public String login(@Valid @RequestBody LoginRequestDto loginRequestDto){
+    public LoginResponseDto login(@Valid @RequestBody LoginRequestDto loginRequestDto){
         return userService.login(loginRequestDto);
 
     }

@@ -4,8 +4,10 @@ import com.ShopSphere.e_commerce.Entity.User;
 import com.ShopSphere.e_commerce.Exception.InvalidCredentialsException;
 import com.ShopSphere.e_commerce.Exception.UserAlreadyExistsException;
 import com.ShopSphere.e_commerce.Repository.UserRepository;
+import com.ShopSphere.e_commerce.Security.JwtService;
 import com.ShopSphere.e_commerce.Service.UserService;
 import com.ShopSphere.e_commerce.dto.LoginRequestDto;
+import com.ShopSphere.e_commerce.dto.LoginResponseDto;
 import com.ShopSphere.e_commerce.dto.UserResponseDto;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -17,11 +19,13 @@ public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final JwtService jwtService;
 
     // constructor injection for safer
-    public UserServiceImpl(UserRepository userRepository, PasswordEncoder passwordEncoder) {
+    public UserServiceImpl(UserRepository userRepository, PasswordEncoder passwordEncoder, JwtService jwtService) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
+        this.jwtService = jwtService;
     }
 
     @Override
@@ -36,23 +40,29 @@ public class UserServiceImpl implements UserService {
 
         User savedUser =  userRepository.save(user);
 
-        UserResponseDto userResponseDto = new UserResponseDto(); // to hide password ,because it is sensitive data
-        userResponseDto.setId(savedUser.getId());
-        userResponseDto.setName(savedUser.getName());
-        userResponseDto.setEmail(savedUser.getEmail());
-
-        return userResponseDto;
+        // Object creation using Constructor call . here to hide password as response
+        return new UserResponseDto(
+                savedUser.getId(),
+                savedUser.getName(),
+                savedUser.getEmail()
+        );
     }
 
     @Override
-    public String login(LoginRequestDto loginRequestDto) {
+    public LoginResponseDto login(LoginRequestDto loginRequestDto) {
         Optional<User> optionalUser = userRepository.findByEmail(loginRequestDto.getEmail());
         if(optionalUser.isEmpty()){
             throw new InvalidCredentialsException("Invalid email or password");
         }
         User user = optionalUser.get();
         if(passwordEncoder.matches(loginRequestDto.getPassword(),user.getPassword() )){
-            return "Login Successful";
+           String token = jwtService.generateToken(user.getEmail());
+
+           // Object creation using Constructor call . here to send response clearly
+           return new LoginResponseDto(
+                   token,
+                   "Login successful"
+           );
         }else{
             throw  new InvalidCredentialsException("Invalid email or password");
         }
