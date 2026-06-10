@@ -1,5 +1,7 @@
 package com.ShopSphere.e_commerce.Exception.Handler;
 
+import com.ShopSphere.e_commerce.Exception.CategoryAlreadyExistsException;
+import com.ShopSphere.e_commerce.Exception.CategoryNotFoundException;
 import com.ShopSphere.e_commerce.Exception.InvalidCredentialsException;
 import com.ShopSphere.e_commerce.Exception.UserAlreadyExistsException;
 import org.springframework.http.HttpStatus;
@@ -38,5 +40,14 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<> (e.getMessage(), HttpStatus.UNAUTHORIZED);
     }
 
+    @ExceptionHandler(CategoryAlreadyExistsException.class)
+    public ResponseEntity<String> handleCategoryAlreadyExistsException(CategoryAlreadyExistsException e){
+        return new ResponseEntity<> (e.getMessage(), HttpStatus.CONFLICT);
+    }
+
+    @ExceptionHandler(CategoryNotFoundException.class)
+    public ResponseEntity<String> handleCategoryNotFoundException(CategoryNotFoundException e){
+        return new ResponseEntity<> (e.getMessage(), HttpStatus.NOT_FOUND);
+    }
 
 }

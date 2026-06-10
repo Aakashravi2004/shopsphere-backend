@@ -1,12 +1,11 @@
 package com.ShopSphere.e_commerce.Exception;
 
-public class UserAlreadyExistsException extends RuntimeException {
+public class CategoryAlreadyExistsException extends RuntimeException{
 
     private final String resourceName;
     private final String fieldName;
 
-
-    public UserAlreadyExistsException(String resourceName, String fieldName) {
+    public CategoryAlreadyExistsException(String resourceName, String fieldName) {
         this.resourceName = resourceName;
         this.fieldName = fieldName;
 
@@ -14,7 +13,7 @@ public class UserAlreadyExistsException extends RuntimeException {
 
     @Override
     public String getMessage() {
-        return resourceName + " With email " + fieldName + " " +  "Already Exists";
+        return resourceName + " With Name '" + fieldName +  "' Already Exists";
     }
-
 }
+

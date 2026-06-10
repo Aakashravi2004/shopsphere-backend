@@ -51,20 +51,20 @@ public class UserServiceImpl implements UserService {
     @Override
     public LoginResponseDto login(LoginRequestDto loginRequestDto) {
         Optional<User> optionalUser = userRepository.findByEmail(loginRequestDto.getEmail());
-        if(optionalUser.isEmpty()){
+        if (optionalUser.isEmpty()) {
             throw new InvalidCredentialsException("Invalid email or password");
         }
         User user = optionalUser.get();
-        if(passwordEncoder.matches(loginRequestDto.getPassword(),user.getPassword() )){
-           String token = jwtService.generateToken(user.getEmail());
+        if (passwordEncoder.matches(loginRequestDto.getPassword(), user.getPassword())) {
+            String token = jwtService.generateToken(user.getEmail());
 
-           // Object creation using Constructor call . here to send response clearly
-           return new LoginResponseDto(
-                   token,
-                   "Login successful"
-           );
-        }else{
-            throw  new InvalidCredentialsException("Invalid email or password");
+            // Object creation using Constructor call . here to send response clearly
+            return new LoginResponseDto(
+                    token,
+                    "Login successful"
+            );
+        } else {
+            throw new InvalidCredentialsException("Invalid email or password");
         }
     }
 

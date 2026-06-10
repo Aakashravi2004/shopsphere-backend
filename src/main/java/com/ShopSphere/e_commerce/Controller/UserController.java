@@ -7,10 +7,7 @@ import com.ShopSphere.e_commerce.dto.LoginResponseDto;
 import com.ShopSphere.e_commerce.dto.UserRequestDto;
 import com.ShopSphere.e_commerce.dto.UserResponseDto;
 import jakarta.validation.Valid;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/users")
@@ -18,7 +15,7 @@ public class UserController {
 
     private final UserService userService;
 
-    // i will not use @AutoWired annotations i use constructor injection
+    // I will not use @AutoWired annotations i use constructor injection
     public UserController(UserService userService) {
         this.userService = userService;
     }
@@ -36,6 +33,11 @@ public class UserController {
     public LoginResponseDto login(@Valid @RequestBody LoginRequestDto loginRequestDto){
         return userService.login(loginRequestDto);
 
+    }
+
+    @GetMapping("/testing")
+    public String testing(){
+        return  "Authenticated";
     }
 
 }
