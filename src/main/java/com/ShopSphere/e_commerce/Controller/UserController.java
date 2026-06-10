@@ -34,10 +34,4 @@ public class UserController {
         return userService.login(loginRequestDto);
 
     }
-
-    @GetMapping("/testing")
-    public String testing(){
-        return  "Authenticated";
-    }
-
 }

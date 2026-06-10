@@ -7,16 +7,17 @@ import javax.crypto.SecretKey;
 import io.jsonwebtoken.security.Keys;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
+import org.springframework.beans.factory.annotation.Value;
 
 @Service
 public class JwtService {
 
-    private static final String SECRET =
-            "my-super-secret-key-for-shopsphere";
+    @Value("${jwt.secret}")
+    private String secret;
 
     // because our jwt token key validation must required cryptographic value
     private SecretKey getSigningKey() {
-            return Keys.hmacShaKeyFor(SECRET.getBytes(StandardCharsets.UTF_8));
+            return Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
     }
 
     public String generateToken(String email){
