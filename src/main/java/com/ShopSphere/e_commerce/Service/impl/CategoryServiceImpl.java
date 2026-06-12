@@ -2,8 +2,10 @@ package com.ShopSphere.e_commerce.Service.impl;
 
 import com.ShopSphere.e_commerce.Entity.Category;
 import com.ShopSphere.e_commerce.Exception.CategoryAlreadyExistsException;
+import com.ShopSphere.e_commerce.Exception.CategoryDeleteException;
 import com.ShopSphere.e_commerce.Exception.CategoryNotFoundException;
 import com.ShopSphere.e_commerce.Repository.CategoryRepository;
+import com.ShopSphere.e_commerce.Repository.ProductRepository;
 import com.ShopSphere.e_commerce.Service.CategoryService;
 import com.ShopSphere.e_commerce.dto.CategoryRequestDto;
 import com.ShopSphere.e_commerce.dto.CategoryResponseDto;
@@ -17,9 +19,11 @@ import java.util.Optional;
 public class CategoryServiceImpl implements CategoryService {
 
     private final CategoryRepository categoryRepository;
+    private final ProductRepository productRepository;
 
-    public CategoryServiceImpl(CategoryRepository categoryRepository) {
+    public CategoryServiceImpl(CategoryRepository categoryRepository,  ProductRepository productRepository) {
         this.categoryRepository = categoryRepository;
+        this.productRepository = productRepository;
     }
 
     @Override
@@ -70,6 +74,45 @@ public class CategoryServiceImpl implements CategoryService {
                 category.getName(),
                 category.getDescription()
         );
+    }
+
+    @Override
+    public CategoryResponseDto updateCategory(Long id, CategoryRequestDto dto){
+        Category category = categoryRepository.findById(id)
+                .orElseThrow(() -> new CategoryNotFoundException("Category With id " + id + " Not Found"));
+
+        Optional<Category> existingCategory =
+                categoryRepository.findByNameIgnoreCase(dto.getName());
+
+        if (existingCategory.isPresent()
+                && !existingCategory.get().getId().equals(id)) {
+
+            throw new CategoryAlreadyExistsException("Category",existingCategory.get().getName());
+        }
+
+        category.setName(dto.getName());
+        category.setDescription(dto.getDescription());
+
+        Category savedCategory = categoryRepository.save(category);
+
+        return new  CategoryResponseDto(
+                savedCategory.getId(),
+                savedCategory.getName(),
+                savedCategory.getDescription()
+        );
+
+    }
+
+    @Override
+    public void deleteCategory(Long id){
+        Category category = categoryRepository.findById(id)
+                .orElseThrow(()-> new CategoryNotFoundException("Category With id " + id + " Not Found"));
+
+        if(productRepository.existsByCategoryId(id)){
+            throw new CategoryDeleteException("Cannot delete category because products exist");
+        }
+
+        categoryRepository.deleteById(id);
     }
 
 }

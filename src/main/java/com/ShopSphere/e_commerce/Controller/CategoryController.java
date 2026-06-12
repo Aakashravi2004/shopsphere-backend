@@ -37,4 +37,16 @@ public class CategoryController {
         return ResponseEntity.ok(categoryService.getCategoryById(id));
     }
 
+    @PutMapping("/{id}")
+    public ResponseEntity<CategoryResponseDto> updateCategory(@PathVariable Long id,
+                                                              @Valid @RequestBody CategoryRequestDto dto){
+        return ResponseEntity.ok(categoryService.updateCategory(id, dto));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<String> deleteCategory(@PathVariable Long id){
+        categoryService.deleteCategory(id);
+        return ResponseEntity.ok("Category deleted successfully");
+    }
+
 }

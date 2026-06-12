@@ -1,9 +1,6 @@
 package com.ShopSphere.e_commerce.Exception.Handler;
 
-import com.ShopSphere.e_commerce.Exception.CategoryAlreadyExistsException;
-import com.ShopSphere.e_commerce.Exception.CategoryNotFoundException;
-import com.ShopSphere.e_commerce.Exception.InvalidCredentialsException;
-import com.ShopSphere.e_commerce.Exception.UserAlreadyExistsException;
+import com.ShopSphere.e_commerce.Exception.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
@@ -48,6 +45,16 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(CategoryNotFoundException.class)
     public ResponseEntity<String> handleCategoryNotFoundException(CategoryNotFoundException e){
         return new ResponseEntity<> (e.getMessage(), HttpStatus.NOT_FOUND);
+    }
+
+    @ExceptionHandler(ProductNotFoundException.class)
+    public ResponseEntity<String> handleProductNotFoundException(ProductNotFoundException e){
+        return new ResponseEntity<> (e.getMessage(), HttpStatus.NOT_FOUND);
+    }
+
+    @ExceptionHandler(CategoryDeleteException.class)
+    public ResponseEntity<String> handleCategoryDeleteException(CategoryDeleteException e){
+        return new ResponseEntity<> (e.getMessage(), HttpStatus.CONFLICT);
     }
 
 }
