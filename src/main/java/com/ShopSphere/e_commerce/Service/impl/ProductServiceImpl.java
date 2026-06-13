@@ -18,6 +18,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class ProductServiceImpl implements ProductService {
@@ -65,16 +66,17 @@ public class ProductServiceImpl implements ProductService {
     public Page<ProductResponseDto> getAllProducts(int page, int size, String sortBy,  String sortOrder) {
 
         //Validate the sortBy
-        List<String> allowedFields = List.of(
-                "id",
-                "name",
-                "price",
-                "stockQuantity"
+        Map<String, String> allowedFields = Map.of(
+                "id", "id",
+                "name", "name",
+                "price", "price",
+                "stockquantity", "stockQuantity"
         );
 
         sortBy = sortBy.trim().toLowerCase();
+        String entityField = allowedFields.get(sortBy);
 
-        if(!allowedFields.contains(sortBy)){
+        if(entityField == null){
             throw new IllegalArgumentException(
                     "Invalid sort field: " + sortBy);
         }
@@ -84,9 +86,9 @@ public class ProductServiceImpl implements ProductService {
 
         //Validate the sortOrder and sort either asc or desc
         if(sortOrder.equalsIgnoreCase("asc")) {
-            sort = Sort.by(sortBy).ascending();
+            sort = Sort.by(entityField).ascending();
         } else if (sortOrder.equalsIgnoreCase("desc")) {
-            sort = Sort.by(sortBy).descending();
+            sort = Sort.by(entityField).descending();
         }else{
             throw new IllegalArgumentException("Invalid sort Order");
         }
