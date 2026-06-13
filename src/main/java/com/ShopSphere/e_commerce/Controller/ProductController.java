@@ -5,6 +5,7 @@ import com.ShopSphere.e_commerce.dto.ProductPatchRequestDto;
 import com.ShopSphere.e_commerce.dto.ProductRequestDto;
 import com.ShopSphere.e_commerce.dto.ProductResponseDto;
 import jakarta.validation.Valid;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -28,8 +29,12 @@ public class ProductController {
     }
 
     @GetMapping
-    public ResponseEntity<List<ProductResponseDto>> getAllProducts() {
-        List<ProductResponseDto> productResponse = productService.getAllProducts();
+    public ResponseEntity<Page<ProductResponseDto>> getAllProducts(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "5") int size,
+            @RequestParam(defaultValue = "id") String sortBy,
+            @RequestParam(defaultValue = "asc") String sortOrder ) {
+        Page<ProductResponseDto> productResponse = productService.getAllProducts(page, size, sortBy, sortOrder);
         return ResponseEntity.ok(productResponse);
     }
 
@@ -60,6 +65,15 @@ public class ProductController {
     public ResponseEntity<ProductResponseDto> patchProduct(@PathVariable Long id,
                                                            @RequestBody ProductPatchRequestDto productPatchRequestDto){
         return ResponseEntity.ok(productService.patchProduct(id, productPatchRequestDto));
+    }
+
+    @GetMapping("/search")
+    public ResponseEntity<List<ProductResponseDto>> searchProducts(
+            @RequestParam String keyword) {
+
+        return ResponseEntity.ok(
+                productService.searchProducts(keyword)
+        );
     }
 
 

@@ -10,6 +10,10 @@ import com.ShopSphere.e_commerce.Service.ProductService;
 import com.ShopSphere.e_commerce.dto.ProductPatchRequestDto;
 import com.ShopSphere.e_commerce.dto.ProductRequestDto;
 import com.ShopSphere.e_commerce.dto.ProductResponseDto;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -58,21 +62,49 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
-    public List<ProductResponseDto> getAllProducts(){
+    public Page<ProductResponseDto> getAllProducts(int page, int size, String sortBy,  String sortOrder) {
 
-        return productRepository.findAll()
-                .stream()
-                .map(product -> new ProductResponseDto(
-                        product.getId(),
-                        product.getName(),
-                        product.getDescription(),
-                        product.getPrice(),
-                        product.getStockQuantity(),
-                        product.getImageUrl(),
-                        product.getCategory().getId(),
-                        product.getCategory().getName()
-                ))
-                .toList();
+        //Validate the sortBy
+        List<String> allowedFields = List.of(
+                "id",
+                "name",
+                "price",
+                "stockQuantity"
+        );
+
+        sortBy = sortBy.trim().toLowerCase();
+
+        if(!allowedFields.contains(sortBy)){
+            throw new IllegalArgumentException(
+                    "Invalid sort field: " + sortBy);
+        }
+
+        //create sort object to pass inside the of method
+        Sort sort;
+
+        //Validate the sortOrder and sort either asc or desc
+        if(sortOrder.equalsIgnoreCase("asc")) {
+            sort = Sort.by(sortBy).ascending();
+        } else if (sortOrder.equalsIgnoreCase("desc")) {
+            sort = Sort.by(sortBy).descending();
+        }else{
+            throw new IllegalArgumentException("Invalid sort Order");
+        }
+
+        //Create pageable object with pageNum, pageSize, sort object (sorted value)
+        Pageable pageable = PageRequest.of(page, size, sort);
+        Page<Product> products = productRepository.findAll(pageable);
+
+        return products.map(product->new ProductResponseDto(
+                product.getId(),
+                product.getName(),
+                product.getDescription(),
+                product.getPrice(),
+                product.getStockQuantity(),
+                product.getImageUrl(),
+                product.getCategory().getId(),
+                product.getCategory().getName()
+        ));
     }
 
     @Override
@@ -195,6 +227,20 @@ public class ProductServiceImpl implements ProductService {
                 product.getCategory().getId(),
                 product.getCategory().getName()
         );
+    }
+
+    public List<ProductResponseDto> searchProducts(String keyword){
+        List<Product> products = productRepository.findByNameContainingIgnoreCase(keyword);
+        return products.stream().map(product -> new ProductResponseDto(
+                product.getId(),
+                product.getName(),
+                product.getDescription(),
+                product.getPrice(),
+                product.getStockQuantity(),
+                product.getImageUrl(),
+                product.getCategory().getId(),
+                product.getCategory().getName()
+        )).toList();
     }
 
 }

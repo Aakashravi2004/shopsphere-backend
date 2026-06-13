@@ -16,5 +16,5 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     //custom query for fetch all product based on category
     List<Product> findByCategoryId(Long categoryId);
     boolean existsByCategoryId(Long categoryId);
-
+    List<Product> findByNameContainingIgnoreCase(String name);
 }
