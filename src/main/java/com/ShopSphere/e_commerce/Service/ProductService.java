@@ -16,6 +16,8 @@ public interface ProductService {
     void deleteProduct(Long id);
     ProductResponseDto updateProduct(Long id, ProductRequestDto productRequestDto);
     ProductResponseDto patchProduct(Long id, ProductPatchRequestDto dto);
-    List<ProductResponseDto> searchProducts(String keyword);
+    Page<ProductResponseDto> searchProducts(String keyword, int page, int size, String sortBy, String sortOrder);
+    List<ProductResponseDto> filterProductsByPriceBetween(Double minPrice, Double maxPrice);
+    List<ProductResponseDto> filterProductsByCategoryAndPriceBetween(Long categoryId, Double minPrice, Double maxPrice);
 
 }

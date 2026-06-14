@@ -2,6 +2,7 @@ package com.ShopSphere.e_commerce.Service.impl;
 
 import com.ShopSphere.e_commerce.Entity.Category;
 import com.ShopSphere.e_commerce.Entity.Product;
+import com.ShopSphere.e_commerce.Exception.CategoryAlreadyExistsException;
 import com.ShopSphere.e_commerce.Exception.CategoryNotFoundException;
 import com.ShopSphere.e_commerce.Exception.ProductNotFoundException;
 import com.ShopSphere.e_commerce.Repository.CategoryRepository;
@@ -231,8 +232,79 @@ public class ProductServiceImpl implements ProductService {
         );
     }
 
-    public List<ProductResponseDto> searchProducts(String keyword){
-        List<Product> products = productRepository.findByNameContainingIgnoreCase(keyword);
+    @Override
+    public Page<ProductResponseDto> searchProducts(String keyword,  int page, int size, String sortBy, String sortOrder){
+
+        //Validate the sortBy
+        Map<String, String> allowedFields = Map.of(
+                "id", "id",
+                "name", "name",
+                "price", "price",
+                "stockquantity", "stockQuantity"
+        );
+
+        sortBy = sortBy.trim().toLowerCase();
+        String entityField = allowedFields.get(sortBy);
+
+        if(entityField == null){
+            throw new IllegalArgumentException(
+                    "Invalid sort field: " + sortBy);
+        }
+
+        //create sort object to pass inside the of method
+        Sort sort;
+
+        //Validate the sortOrder and sort either asc or desc
+        if(sortOrder.equalsIgnoreCase("asc")) {
+            sort = Sort.by(entityField).ascending();
+        } else if (sortOrder.equalsIgnoreCase("desc")) {
+            sort = Sort.by(entityField).descending();
+        }else{
+            throw new IllegalArgumentException("Invalid sort Order");
+        }
+        Pageable pageable = PageRequest.of(page, size, sort);
+
+        Page<Product> products = productRepository.findByNameContainingIgnoreCase(keyword, pageable);
+        return products.map(product -> new ProductResponseDto(
+                product.getId(),
+                product.getName(),
+                product.getDescription(),
+                product.getPrice(),
+                product.getStockQuantity(),
+                product.getImageUrl(),
+                product.getCategory().getId(),
+                product.getCategory().getName()
+        ));
+    }
+
+    @Override
+    public List<ProductResponseDto> filterProductsByPriceBetween(Double minPrice, Double maxPrice){
+        if(minPrice >  maxPrice){
+            throw new IllegalArgumentException("Minimum price cannot be greater than maximum price");
+        }
+        List<Product> products = productRepository.findByPriceBetween(minPrice, maxPrice);
+        return products.stream().map(product -> new ProductResponseDto(
+                product.getId(),
+                product.getName(),
+                product.getDescription(),
+                product.getPrice(),
+                product.getStockQuantity(),
+                product.getImageUrl(),
+                product.getCategory().getId(),
+                product.getCategory().getName()
+        )).toList();
+    }
+
+    @Override
+    public List<ProductResponseDto> filterProductsByCategoryAndPriceBetween(Long categoryId, Double minPrice, Double maxPrice){
+
+        categoryRepository.findById(categoryId).orElseThrow(() -> new CategoryNotFoundException("Category with id " + categoryId + " Not Found"));
+
+        if(minPrice >  maxPrice){
+            throw new IllegalArgumentException("Minimum price cannot be greater than maximum price");
+        }
+        List<Product> products = productRepository.findByCategoryIdAndPriceBetween(categoryId, minPrice, maxPrice);
+
         return products.stream().map(product -> new ProductResponseDto(
                 product.getId(),
                 product.getName(),

@@ -1,6 +1,8 @@
 package com.ShopSphere.e_commerce.Repository;
 
 import com.ShopSphere.e_commerce.Entity.Product;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
@@ -16,5 +18,7 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     //custom query for fetch all product based on category
     List<Product> findByCategoryId(Long categoryId);
     boolean existsByCategoryId(Long categoryId);
-    List<Product> findByNameContainingIgnoreCase(String name);
+    Page<Product> findByNameContainingIgnoreCase(String keyword, Pageable pageable);
+    List<Product> findByCategoryIdAndPriceBetween(Long categoryId, Double minPrice, Double maxPrice);
+    List<Product> findByPriceBetween(Double minPrice, Double maxPrice);
 }

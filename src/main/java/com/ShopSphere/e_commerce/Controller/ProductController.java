@@ -68,12 +68,26 @@ public class ProductController {
     }
 
     @GetMapping("/search")
-    public ResponseEntity<List<ProductResponseDto>> searchProducts(
-            @RequestParam String keyword) {
+    public ResponseEntity<Page<ProductResponseDto>> searchProducts(
+            @RequestParam String keyword,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "3") int size,
+            @RequestParam(defaultValue = "id") String sortBy,
+            @RequestParam(defaultValue = "asc") String sortOrder) {
 
         return ResponseEntity.ok(
-                productService.searchProducts(keyword)
+                productService.searchProducts(keyword, page, size, sortBy, sortOrder)
         );
+    }
+
+    @GetMapping("/filter")
+    public ResponseEntity<List<ProductResponseDto>> filterProductsByPrice(@RequestParam Double minPrice, @RequestParam Double maxPrice) {
+        return ResponseEntity.ok(productService.filterProductsByPriceBetween(minPrice, maxPrice));
+    }
+
+    @GetMapping("/filter/category")
+    public ResponseEntity<List<ProductResponseDto>> filterProductsByCategory(@RequestParam Long categoryId, @RequestParam Double minPrice, @RequestParam Double maxPrice) {
+        return ResponseEntity.ok(productService.filterProductsByCategoryAndPriceBetween(categoryId, minPrice, maxPrice));
     }
 
 
