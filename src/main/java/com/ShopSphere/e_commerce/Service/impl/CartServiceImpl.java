@@ -4,6 +4,7 @@ import com.ShopSphere.e_commerce.Entity.Cart;
 import com.ShopSphere.e_commerce.Entity.CartItem;
 import com.ShopSphere.e_commerce.Entity.Product;
 import com.ShopSphere.e_commerce.Entity.User;
+import com.ShopSphere.e_commerce.Exception.CartNotFoundException;
 import com.ShopSphere.e_commerce.Exception.ProductNotFoundException;
 import com.ShopSphere.e_commerce.Exception.UserNotFoundException;
 import com.ShopSphere.e_commerce.Repository.CartItemRepository;
@@ -13,12 +14,15 @@ import com.ShopSphere.e_commerce.Repository.UserRepository;
 import com.ShopSphere.e_commerce.Service.CartService;
 import com.ShopSphere.e_commerce.dto.AddToCartRequestDto;
 import com.ShopSphere.e_commerce.dto.AddToCartResponseDto;
+import com.ShopSphere.e_commerce.dto.CartItemResponseDto;
+import com.ShopSphere.e_commerce.dto.CartResponseDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -81,6 +85,49 @@ public class CartServiceImpl implements CartService {
                 product.getName(),
                 cartItem.getQuantity()
         );
+    }
+
+    @Override
+    public CartResponseDto getCart(){
+        // step 1 : get logged in user .
+        //          Because client only fetch the cart not send cart_id so, we already have user based on user we return cart items
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String email =  authentication.getName();
+
+        User user = userRepository.findByEmail(email).
+                orElseThrow(() -> new UserNotFoundException("User With email " + email + " Not Found"));
+
+        Cart cart = cartRepository.findByUserId(user.getId())
+                .orElseThrow(() -> new CartNotFoundException("Cart with id " + user.getId() + " not Found"));
+
+        List<CartItem> cartItems = cartItemRepository.findByCart(cart);
+
+        List<CartItemResponseDto> itemDtos = cartItems.stream()
+                .map(cartItem -> {
+                    Double subTotal = cartItem.getProduct().getPrice() * cartItem.getQuantity();
+
+                    return new CartItemResponseDto(
+                            cartItem.getProduct().getId(),
+                            cartItem.getProduct().getName(),
+                            cartItem.getProduct().getPrice(),
+                            cartItem.getQuantity(),
+                            subTotal
+                    );
+
+                }).toList();
+
+        Integer totalItems = cartItems.stream().mapToInt(CartItem::getQuantity).sum();
+
+        Double totalPrice = itemDtos.stream().mapToDouble(CartItemResponseDto::getSubtotal).sum();
+
+        return new CartResponseDto(
+                cart.getId(),
+                user.getId(),
+                totalItems,
+                totalPrice,
+                itemDtos
+        );
+
     }
 
 }
