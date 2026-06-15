@@ -29,6 +29,9 @@ public class User implements UserDetails {
     @Column(nullable = false)
     private String password;
 
+    @OneToOne(cascade = CascadeType.ALL, mappedBy = "user", fetch = FetchType.LAZY)
+    private Cart cart;
+
     @Override
     public String getUsername() {
         return email;
