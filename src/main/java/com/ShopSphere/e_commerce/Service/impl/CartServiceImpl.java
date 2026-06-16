@@ -4,6 +4,7 @@ import com.ShopSphere.e_commerce.Entity.Cart;
 import com.ShopSphere.e_commerce.Entity.CartItem;
 import com.ShopSphere.e_commerce.Entity.Product;
 import com.ShopSphere.e_commerce.Entity.User;
+import com.ShopSphere.e_commerce.Exception.CartItemNotFoundException;
 import com.ShopSphere.e_commerce.Exception.CartNotFoundException;
 import com.ShopSphere.e_commerce.Exception.ProductNotFoundException;
 import com.ShopSphere.e_commerce.Exception.UserNotFoundException;
@@ -12,10 +13,7 @@ import com.ShopSphere.e_commerce.Repository.CartRepository;
 import com.ShopSphere.e_commerce.Repository.ProductRepository;
 import com.ShopSphere.e_commerce.Repository.UserRepository;
 import com.ShopSphere.e_commerce.Service.CartService;
-import com.ShopSphere.e_commerce.dto.AddToCartRequestDto;
-import com.ShopSphere.e_commerce.dto.AddToCartResponseDto;
-import com.ShopSphere.e_commerce.dto.CartItemResponseDto;
-import com.ShopSphere.e_commerce.dto.CartResponseDto;
+import com.ShopSphere.e_commerce.dto.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -126,6 +124,63 @@ public class CartServiceImpl implements CartService {
                 totalItems,
                 totalPrice,
                 itemDtos
+        );
+
+    }
+
+    @Override
+    public RemoveFromCartResponseDto removeFromCart(Long productId){
+
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String email =  authentication.getName();
+
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new UserNotFoundException("User With email " + email + " Not Found"));
+
+        Cart cart = cartRepository.findByUserId(user.getId())
+                .orElseThrow(() -> new CartNotFoundException("Cart not found for user id " + user.getId()));
+
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new ProductNotFoundException("Product with id " + productId + " not found"));
+
+        CartItem cartItem = cartItemRepository.findByCartAndProduct(cart, product)
+                .orElseThrow(() -> new CartItemNotFoundException( "Product with id " + productId + " is not present in cart"));
+
+        cartItemRepository.delete(cartItem);
+
+         return new RemoveFromCartResponseDto(
+                "Product removed from cart successfully",
+                product.getId(),
+                product.getName()
+        );
+    }
+
+    @Override
+    public UpdateCartItemResponseDto updateCartItem(Long productId, UpdateCartItemRequestDto dto){
+
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String email =  authentication.getName();
+
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new UserNotFoundException("User With email " + email + " Not Found"));
+
+        Cart cart = cartRepository.findByUserId(user.getId())
+                .orElseThrow(() -> new CartNotFoundException("Cart not found for user id " + user.getId()));
+
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new ProductNotFoundException("Product with id " + productId + " not found"));
+
+        CartItem cartItem = cartItemRepository.findByCartAndProduct(cart, product)
+                .orElseThrow(() -> new CartItemNotFoundException("Product with id " + productId + " is not present in cart"));
+
+        cartItem.setQuantity(dto.getQuantity());
+        cartItemRepository.save(cartItem);
+
+        return new UpdateCartItemResponseDto(
+                "Quantity updated successfully",
+                product.getId(),
+                product.getName(),
+                cartItem.getQuantity()
         );
 
     }

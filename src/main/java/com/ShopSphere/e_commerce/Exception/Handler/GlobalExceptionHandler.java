@@ -72,4 +72,9 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<> (e.getMessage(), HttpStatus.NOT_FOUND);
     }
 
+    @ExceptionHandler(CartItemNotFoundException.class)
+    public ResponseEntity<String> handleCartItemNotFoundException(CartItemNotFoundException e){
+        return new ResponseEntity<> (e.getMessage(), HttpStatus.NOT_FOUND);
+    }
+
 }
