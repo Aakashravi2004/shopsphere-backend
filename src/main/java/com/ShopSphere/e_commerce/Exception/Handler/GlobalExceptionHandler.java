@@ -77,4 +77,19 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<> (e.getMessage(), HttpStatus.NOT_FOUND);
     }
 
+    @ExceptionHandler(CartEmptyException.class)
+    public ResponseEntity<String> handleCartEmptyException(CartEmptyException e){
+        return new ResponseEntity<> (e.getMessage(), HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(OrderNotFoundException.class)
+    public ResponseEntity<String> handleOrderNotFoundException(OrderNotFoundException e){
+        return new ResponseEntity<> (e.getMessage(), HttpStatus.NOT_FOUND);
+    }
+
+    @ExceptionHandler(IllegalStateException.class)
+    public ResponseEntity<String> handleIllegalStateException(IllegalStateException e){
+        return new ResponseEntity<> (e.getMessage(), HttpStatus.BAD_REQUEST);
+    }
+
 }
