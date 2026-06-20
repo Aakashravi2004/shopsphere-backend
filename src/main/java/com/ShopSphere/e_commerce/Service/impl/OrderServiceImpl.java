@@ -114,7 +114,7 @@ public class OrderServiceImpl implements OrderService {
                     List<OrderItemResponseDto> itemDtos = order.getOrderItems()
                             .stream().map(orderItem -> {
                                 double subtotal = orderItem.getPrice()*orderItem.getQuantity();
-                                return new   OrderItemResponseDto(
+                                return new OrderItemResponseDto(
                                         orderItem.getProduct().getId(),
                                         orderItem.getProduct().getName(),
                                         orderItem.getPrice(),
@@ -195,6 +195,142 @@ public class OrderServiceImpl implements OrderService {
                 savedOrder.getOrderStatus(),
                 savedOrder.getOrderDate(),
                 itemDtos
+        );
+    }
+
+    @Override
+    public OrderResponseDto getOrderById(Long orderId){
+
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String email = authentication.getName();
+
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new UserNotFoundException("User with email " + email + " not found"));
+
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new OrderNotFoundException("Order with id " + orderId + " not found"));
+
+        if(!order.getUser().getId().equals(user.getId())){
+            throw new OrderNotFoundException("Order does not belong to this user");
+        }
+
+        List<OrderItemResponseDto> items = order.getOrderItems().stream()
+                .map(orderItem -> {
+                    double subtotal = orderItem.getPrice()*orderItem.getQuantity();
+                    return new OrderItemResponseDto(
+                            orderItem.getProduct().getId(),
+                            orderItem.getProduct().getName(),
+                            orderItem.getPrice(),
+                            orderItem.getQuantity(),
+                            subtotal
+                    );
+                }).toList();
+
+        return new OrderResponseDto(
+                order.getId(),
+                order.getTotalPrice(),
+                order.getOrderStatus(),
+                order.getOrderDate(),
+                items
+        );
+    }
+
+    @Override
+    public OrderResponseDto cancelOrder(Long orderId){
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String email = authentication.getName();
+
+        User user  = userRepository.findByEmail(email)
+                .orElseThrow(() -> new UserNotFoundException("User with email " + email + " not found"));
+
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new OrderNotFoundException("Order with id " + orderId + " not found"));
+
+        if(!order.getUser().getId().equals(user.getId())){
+            throw new OrderNotFoundException("Order does not belong to this user");
+        }
+
+        if(order.getOrderStatus() == OrderStatus.PAID){
+            order.setOrderStatus(OrderStatus.REFUNDED);
+        } else if (order.getOrderStatus() == OrderStatus.PENDING) {
+            order.setOrderStatus(OrderStatus.CANCELLED);
+        } else if (order.getOrderStatus() == OrderStatus.CANCELLED) {
+            throw   new IllegalStateException("Order with id " + orderId + " is already cancelled");
+        } else if (order.getOrderStatus() == OrderStatus.DELIVERED) {
+            throw new IllegalStateException("Order with id " + orderId + " is already delivered");
+        } else if (order.getOrderStatus() == OrderStatus.REFUNDED) {
+            throw new IllegalStateException("Order with id " + orderId + " is already refunded");
+        }
+        Order savedOrder = orderRepository.save(order);
+
+        List<OrderItemResponseDto> items = savedOrder.getOrderItems().stream()
+                .map(orderItem -> {
+                    double subtotal = orderItem.getPrice()*orderItem.getQuantity();
+                    return new OrderItemResponseDto(
+                            orderItem.getProduct().getId(),
+                            orderItem.getProduct().getName(),
+                            orderItem.getPrice(),
+                            orderItem.getQuantity(),
+                            subtotal
+                    );
+                }).toList();
+
+        return new OrderResponseDto(
+                savedOrder.getId(),
+                savedOrder.getTotalPrice(),
+                savedOrder.getOrderStatus(),
+                savedOrder.getOrderDate(),
+                items
+        );
+
+    }
+
+    @Override
+    public OrderResponseDto updateOrderStatus(Long orderId, OrderStatus orderStatus){
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new OrderNotFoundException("Order with id " + orderId + " not found"));
+
+        OrderStatus currentOrderStatus = order.getOrderStatus();
+
+        // validation
+        if(currentOrderStatus == OrderStatus.PENDING &&  orderStatus != OrderStatus.PAID){
+                throw   new IllegalStateException("PENDING order can only be moved to PAID");
+        }
+        if(currentOrderStatus == OrderStatus.PAID && orderStatus != OrderStatus.SHIPPED){
+            throw new  IllegalStateException("PAID order can only be moved to SHIPPED");
+        }
+        if(currentOrderStatus == OrderStatus.SHIPPED &&  orderStatus != OrderStatus.OUT_FOR_DELIVERY){
+            throw  new IllegalStateException("SHIPPED order can only be moved to OUT_FOR_DELIVERY");
+        }
+        if(currentOrderStatus == OrderStatus.OUT_FOR_DELIVERY && orderStatus != OrderStatus.DELIVERED){
+            throw new IllegalStateException("OUT_FOR_DELIVERY order can only be moved to DELIVERED");
+        }
+        if(currentOrderStatus == OrderStatus.DELIVERED || currentOrderStatus == OrderStatus.CANCELLED || currentOrderStatus == OrderStatus.REFUNDED){
+            throw new IllegalStateException(currentOrderStatus + " order cannot be modified");
+        }
+
+        order.setOrderStatus(orderStatus);
+
+        Order savedOrder = orderRepository.save(order);
+
+        List<OrderItemResponseDto> items = savedOrder.getOrderItems().stream()
+                .map(orderItem -> {
+                    double subtotal = orderItem.getPrice()*orderItem.getQuantity();
+                    return new OrderItemResponseDto(
+                            orderItem.getProduct().getId(),
+                            orderItem.getProduct().getName(),
+                            orderItem.getPrice(),
+                            orderItem.getQuantity(),
+                            subtotal
+                    );
+                }).toList();
+
+        return new OrderResponseDto(
+                savedOrder.getId(),
+                savedOrder.getTotalPrice(),
+                savedOrder.getOrderStatus(),
+                savedOrder.getOrderDate(),
+                items
         );
 
     }
