@@ -92,4 +92,14 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<> (e.getMessage(), HttpStatus.BAD_REQUEST);
     }
 
+    @ExceptionHandler(WishlistNotFoundException.class)
+    public ResponseEntity<String> handleWishlistNotFound(WishlistNotFoundException e){
+        return new ResponseEntity<> (e.getMessage(), HttpStatus.NOT_FOUND);
+    }
+
+    @ExceptionHandler(WishlistAlreadyExistException.class)
+    public ResponseEntity<String> handleWishlistAlreadyExistException(WishlistAlreadyExistException e){
+        return new ResponseEntity<> (e.getMessage(), HttpStatus.CONFLICT);
+    }
+
 }

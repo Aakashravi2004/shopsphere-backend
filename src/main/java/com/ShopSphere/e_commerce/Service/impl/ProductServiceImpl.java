@@ -10,6 +10,8 @@ import com.ShopSphere.e_commerce.Repository.CategoryRepository;
 import com.ShopSphere.e_commerce.Repository.ProductRepository;
 import com.ShopSphere.e_commerce.Repository.ReviewRepository;
 import com.ShopSphere.e_commerce.Service.ProductService;
+import com.ShopSphere.e_commerce.Service.RatingService;
+import com.ShopSphere.e_commerce.Service.ReviewService;
 import com.ShopSphere.e_commerce.dto.ProductPatchRequestDto;
 import com.ShopSphere.e_commerce.dto.ProductRequestDto;
 import com.ShopSphere.e_commerce.dto.ProductResponseDto;
@@ -28,30 +30,12 @@ public class ProductServiceImpl implements ProductService {
 
     private final ProductRepository productRepository;
     private final CategoryRepository categoryRepository;
-    private final ReviewRepository reviewRepository;
+    private final RatingService ratingService;
 
-    public ProductServiceImpl(ProductRepository productRepository, CategoryRepository categoryRepository, ReviewRepository reviewRepository) {
+    public ProductServiceImpl(ProductRepository productRepository, CategoryRepository categoryRepository, RatingService ratingService) {
         this.productRepository = productRepository;
         this.categoryRepository = categoryRepository;
-        this.reviewRepository = reviewRepository;
-    }
-
-    private Double calculateAverageRating(Long productId) {
-        List<Review> reviews = reviewRepository.findByProductId(productId);
-
-        if (reviews.isEmpty()) {
-            return 0.0;
-        }
-
-        int sum = 0;
-        for (Review review : reviews) {
-            sum += review.getRating();
-        }
-        return (double) sum / reviews.size();
-
-//        Sort code using Stream API Java 8 Features
-//        return reviews.stream().mapToInt(Review::getRating).average().orElse(0.0);
-
+        this.ratingService = ratingService;
     }
 
     @Override
@@ -80,7 +64,7 @@ public class ProductServiceImpl implements ProductService {
                 savedProduct.getImageUrl(),
                 savedProduct.getCategory().getId(),
                 savedProduct.getCategory().getName(),
-                calculateAverageRating(savedProduct.getId())
+                ratingService.calculateAverageRating(savedProduct.getId())
         );
 
     }
@@ -129,7 +113,7 @@ public class ProductServiceImpl implements ProductService {
                 product.getImageUrl(),
                 product.getCategory().getId(),
                 product.getCategory().getName(),
-                calculateAverageRating(product.getId())
+                ratingService.calculateAverageRating(product.getId())
         ));
     }
 
@@ -145,7 +129,7 @@ public class ProductServiceImpl implements ProductService {
                 productFromDb.getImageUrl(),
                 productFromDb.getCategory().getId(),
                 productFromDb.getCategory().getName(),
-                calculateAverageRating(productFromDb.getId())
+                ratingService.calculateAverageRating(productFromDb.getId())
         );
     }
 
@@ -166,7 +150,7 @@ public class ProductServiceImpl implements ProductService {
                         product.getImageUrl(),
                         product.getCategory().getId(),
                         product.getCategory().getName(),
-                        calculateAverageRating(product.getId())
+                        ratingService.calculateAverageRating(product.getId())
                 ))
                 .toList();
     }
@@ -212,7 +196,7 @@ public class ProductServiceImpl implements ProductService {
                 product.getImageUrl(),
                 product.getCategory().getId(),
                 product.getCategory().getName(),
-                calculateAverageRating(product.getId())
+                ratingService.calculateAverageRating(product.getId())
         );
     }
 
@@ -255,7 +239,7 @@ public class ProductServiceImpl implements ProductService {
                 product.getImageUrl(),
                 product.getCategory().getId(),
                 product.getCategory().getName(),
-                calculateAverageRating(product.getId())
+                ratingService.calculateAverageRating(product.getId())
         );
     }
 
@@ -301,7 +285,7 @@ public class ProductServiceImpl implements ProductService {
                 product.getImageUrl(),
                 product.getCategory().getId(),
                 product.getCategory().getName(),
-                calculateAverageRating(product.getId())
+                ratingService.calculateAverageRating(product.getId())
         ));
     }
 
@@ -320,7 +304,7 @@ public class ProductServiceImpl implements ProductService {
                 product.getImageUrl(),
                 product.getCategory().getId(),
                 product.getCategory().getName(),
-                calculateAverageRating(product.getId())
+                ratingService.calculateAverageRating(product.getId())
         )).toList();
     }
 
@@ -343,7 +327,7 @@ public class ProductServiceImpl implements ProductService {
                 product.getImageUrl(),
                 product.getCategory().getId(),
                 product.getCategory().getName(),
-                calculateAverageRating(product.getId())
+                ratingService.calculateAverageRating(product.getId())
         )).toList();
     }
 
