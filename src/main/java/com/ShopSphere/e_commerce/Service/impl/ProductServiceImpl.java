@@ -2,11 +2,13 @@ package com.ShopSphere.e_commerce.Service.impl;
 
 import com.ShopSphere.e_commerce.Entity.Category;
 import com.ShopSphere.e_commerce.Entity.Product;
+import com.ShopSphere.e_commerce.Entity.Review;
 import com.ShopSphere.e_commerce.Exception.CategoryAlreadyExistsException;
 import com.ShopSphere.e_commerce.Exception.CategoryNotFoundException;
 import com.ShopSphere.e_commerce.Exception.ProductNotFoundException;
 import com.ShopSphere.e_commerce.Repository.CategoryRepository;
 import com.ShopSphere.e_commerce.Repository.ProductRepository;
+import com.ShopSphere.e_commerce.Repository.ReviewRepository;
 import com.ShopSphere.e_commerce.Service.ProductService;
 import com.ShopSphere.e_commerce.dto.ProductPatchRequestDto;
 import com.ShopSphere.e_commerce.dto.ProductRequestDto;
@@ -25,16 +27,35 @@ import java.util.Map;
 public class ProductServiceImpl implements ProductService {
 
     private final ProductRepository productRepository;
-
     private final CategoryRepository categoryRepository;
+    private final ReviewRepository reviewRepository;
 
-    public ProductServiceImpl(ProductRepository productRepository, CategoryRepository categoryRepository) {
+    public ProductServiceImpl(ProductRepository productRepository, CategoryRepository categoryRepository, ReviewRepository reviewRepository) {
         this.productRepository = productRepository;
         this.categoryRepository = categoryRepository;
+        this.reviewRepository = reviewRepository;
+    }
+
+    private Double calculateAverageRating(Long productId) {
+        List<Review> reviews = reviewRepository.findByProductId(productId);
+
+        if (reviews.isEmpty()) {
+            return 0.0;
+        }
+
+        int sum = 0;
+        for (Review review : reviews) {
+            sum += review.getRating();
+        }
+        return (double) sum / reviews.size();
+
+//        Sort code using Stream API Java 8 Features
+//        return reviews.stream().mapToInt(Review::getRating).average().orElse(0.0);
+
     }
 
     @Override
-    public ProductResponseDto createProduct(ProductRequestDto productRequestDto){
+    public ProductResponseDto createProduct(ProductRequestDto productRequestDto) {
         Category category = categoryRepository.findById(productRequestDto.getCategoryId())
                 .orElseThrow(() -> new CategoryNotFoundException("Category not found"));
 
@@ -58,13 +79,14 @@ public class ProductServiceImpl implements ProductService {
                 savedProduct.getStockQuantity(),
                 savedProduct.getImageUrl(),
                 savedProduct.getCategory().getId(),
-                savedProduct.getCategory().getName()
+                savedProduct.getCategory().getName(),
+                calculateAverageRating(savedProduct.getId())
         );
 
     }
 
     @Override
-    public Page<ProductResponseDto> getAllProducts(int page, int size, String sortBy,  String sortOrder) {
+    public Page<ProductResponseDto> getAllProducts(int page, int size, String sortBy, String sortOrder) {
 
         //Validate the sortBy
         Map<String, String> allowedFields = Map.of(
@@ -77,7 +99,7 @@ public class ProductServiceImpl implements ProductService {
         sortBy = sortBy.trim().toLowerCase();
         String entityField = allowedFields.get(sortBy);
 
-        if(entityField == null){
+        if (entityField == null) {
             throw new IllegalArgumentException(
                     "Invalid sort field: " + sortBy);
         }
@@ -86,11 +108,11 @@ public class ProductServiceImpl implements ProductService {
         Sort sort;
 
         //Validate the sortOrder and sort either asc or desc
-        if(sortOrder.equalsIgnoreCase("asc")) {
+        if (sortOrder.equalsIgnoreCase("asc")) {
             sort = Sort.by(entityField).ascending();
         } else if (sortOrder.equalsIgnoreCase("desc")) {
             sort = Sort.by(entityField).descending();
-        }else{
+        } else {
             throw new IllegalArgumentException("Invalid sort Order");
         }
 
@@ -98,7 +120,7 @@ public class ProductServiceImpl implements ProductService {
         Pageable pageable = PageRequest.of(page, size, sort);
         Page<Product> products = productRepository.findAll(pageable);
 
-        return products.map(product->new ProductResponseDto(
+        return products.map(product -> new ProductResponseDto(
                 product.getId(),
                 product.getName(),
                 product.getDescription(),
@@ -106,13 +128,14 @@ public class ProductServiceImpl implements ProductService {
                 product.getStockQuantity(),
                 product.getImageUrl(),
                 product.getCategory().getId(),
-                product.getCategory().getName()
+                product.getCategory().getName(),
+                calculateAverageRating(product.getId())
         ));
     }
 
     @Override
-    public ProductResponseDto getProductById(Long id){
-        Product productFromDb  = productRepository.findById(id).orElseThrow(() -> new ProductNotFoundException("Product with id " + id + " Not Found"));
+    public ProductResponseDto getProductById(Long id) {
+        Product productFromDb = productRepository.findById(id).orElseThrow(() -> new ProductNotFoundException("Product with id " + id + " Not Found"));
         return new ProductResponseDto(
                 productFromDb.getId(),
                 productFromDb.getName(),
@@ -121,33 +144,35 @@ public class ProductServiceImpl implements ProductService {
                 productFromDb.getStockQuantity(),
                 productFromDb.getImageUrl(),
                 productFromDb.getCategory().getId(),
-                productFromDb.getCategory().getName()
+                productFromDb.getCategory().getName(),
+                calculateAverageRating(productFromDb.getId())
         );
     }
 
     @Override
-    public List<ProductResponseDto> getProductsByCategory(Long categoryId){
+    public List<ProductResponseDto> getProductsByCategory(Long categoryId) {
 
         Category category = categoryRepository.findById(categoryId)
                 .orElseThrow(() -> new CategoryNotFoundException("Category With " + categoryId + " not found"));
 
-       return productRepository.findByCategoryId(categoryId)
-               .stream()
-               .map(product -> new ProductResponseDto(
-                       product.getId(),
-                       product.getName(),
-                       product.getDescription(),
-                       product.getPrice(),
-                       product.getStockQuantity(),
-                       product.getImageUrl(),
-                       product.getCategory().getId(),
-                       product.getCategory().getName()
-               ))
-               .toList();
+        return productRepository.findByCategoryId(categoryId)
+                .stream()
+                .map(product -> new ProductResponseDto(
+                        product.getId(),
+                        product.getName(),
+                        product.getDescription(),
+                        product.getPrice(),
+                        product.getStockQuantity(),
+                        product.getImageUrl(),
+                        product.getCategory().getId(),
+                        product.getCategory().getName(),
+                        calculateAverageRating(product.getId())
+                ))
+                .toList();
     }
 
     @Override
-    public void deleteProduct(Long id){
+    public void deleteProduct(Long id) {
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new ProductNotFoundException("Product with id " + id + " Not Found"));
         productRepository.delete(product);
@@ -155,7 +180,7 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     public ProductResponseDto updateProduct(Long id,
-                                     ProductRequestDto productRequestDto){
+                                            ProductRequestDto productRequestDto) {
         // step 1 : checking the product
         Product existingProduct = productRepository.findById(id)
                 .orElseThrow(() -> new ProductNotFoundException("Product with id " + id + " Not Found"));
@@ -169,7 +194,7 @@ public class ProductServiceImpl implements ProductService {
 
         // step 3 : Validate that the category exists before assigning it to the product
         Category category = categoryRepository.findById(productRequestDto.getCategoryId())
-                .orElseThrow(() -> new CategoryNotFoundException("Category with id " + productRequestDto.getCategoryId() +  " Not Found"));
+                .orElseThrow(() -> new CategoryNotFoundException("Category with id " + productRequestDto.getCategoryId() + " Not Found"));
 
         // step 4 : If the category is available update that also
         existingProduct.setCategory(category);
@@ -186,32 +211,33 @@ public class ProductServiceImpl implements ProductService {
                 product.getStockQuantity(),
                 product.getImageUrl(),
                 product.getCategory().getId(),
-                product.getCategory().getName()
+                product.getCategory().getName(),
+                calculateAverageRating(product.getId())
         );
     }
 
     @Override
-    public ProductResponseDto patchProduct(Long id, ProductPatchRequestDto dto){
+    public ProductResponseDto patchProduct(Long id, ProductPatchRequestDto dto) {
 
         Product product = productRepository.findById(id)
-                .orElseThrow(() ->  new ProductNotFoundException("Product with id " + id + " Not Found"));
+                .orElseThrow(() -> new ProductNotFoundException("Product with id " + id + " Not Found"));
 
-        if(dto.getName() != null){
+        if (dto.getName() != null) {
             product.setName(dto.getName());
         }
-        if(dto.getDescription() != null){
+        if (dto.getDescription() != null) {
             product.setDescription(dto.getDescription());
         }
-        if(dto.getPrice() != null){
+        if (dto.getPrice() != null) {
             product.setPrice(dto.getPrice());
         }
-        if(dto.getStockQuantity() != null){
+        if (dto.getStockQuantity() != null) {
             product.setStockQuantity(dto.getStockQuantity());
         }
-        if(dto.getImageUrl() != null){
+        if (dto.getImageUrl() != null) {
             product.setImageUrl(dto.getImageUrl());
         }
-        if(dto.getCategoryId() != null){
+        if (dto.getCategoryId() != null) {
             Category category = categoryRepository.findById(dto.getCategoryId())
                     .orElseThrow(() -> new CategoryNotFoundException("Category with id " + dto.getCategoryId() + " Not Found"));
 
@@ -228,12 +254,13 @@ public class ProductServiceImpl implements ProductService {
                 product.getStockQuantity(),
                 product.getImageUrl(),
                 product.getCategory().getId(),
-                product.getCategory().getName()
+                product.getCategory().getName(),
+                calculateAverageRating(product.getId())
         );
     }
 
     @Override
-    public Page<ProductResponseDto> searchProducts(String keyword,  int page, int size, String sortBy, String sortOrder){
+    public Page<ProductResponseDto> searchProducts(String keyword, int page, int size, String sortBy, String sortOrder) {
 
         //Validate the sortBy
         Map<String, String> allowedFields = Map.of(
@@ -246,7 +273,7 @@ public class ProductServiceImpl implements ProductService {
         sortBy = sortBy.trim().toLowerCase();
         String entityField = allowedFields.get(sortBy);
 
-        if(entityField == null){
+        if (entityField == null) {
             throw new IllegalArgumentException(
                     "Invalid sort field: " + sortBy);
         }
@@ -255,11 +282,11 @@ public class ProductServiceImpl implements ProductService {
         Sort sort;
 
         //Validate the sortOrder and sort either asc or desc
-        if(sortOrder.equalsIgnoreCase("asc")) {
+        if (sortOrder.equalsIgnoreCase("asc")) {
             sort = Sort.by(entityField).ascending();
         } else if (sortOrder.equalsIgnoreCase("desc")) {
             sort = Sort.by(entityField).descending();
-        }else{
+        } else {
             throw new IllegalArgumentException("Invalid sort Order");
         }
         Pageable pageable = PageRequest.of(page, size, sort);
@@ -273,13 +300,14 @@ public class ProductServiceImpl implements ProductService {
                 product.getStockQuantity(),
                 product.getImageUrl(),
                 product.getCategory().getId(),
-                product.getCategory().getName()
+                product.getCategory().getName(),
+                calculateAverageRating(product.getId())
         ));
     }
 
     @Override
-    public List<ProductResponseDto> filterProductsByPriceBetween(Double minPrice, Double maxPrice){
-        if(minPrice >  maxPrice){
+    public List<ProductResponseDto> filterProductsByPriceBetween(Double minPrice, Double maxPrice) {
+        if (minPrice > maxPrice) {
             throw new IllegalArgumentException("Minimum price cannot be greater than maximum price");
         }
         List<Product> products = productRepository.findByPriceBetween(minPrice, maxPrice);
@@ -291,16 +319,17 @@ public class ProductServiceImpl implements ProductService {
                 product.getStockQuantity(),
                 product.getImageUrl(),
                 product.getCategory().getId(),
-                product.getCategory().getName()
+                product.getCategory().getName(),
+                calculateAverageRating(product.getId())
         )).toList();
     }
 
     @Override
-    public List<ProductResponseDto> filterProductsByCategoryAndPriceBetween(Long categoryId, Double minPrice, Double maxPrice){
+    public List<ProductResponseDto> filterProductsByCategoryAndPriceBetween(Long categoryId, Double minPrice, Double maxPrice) {
 
         categoryRepository.findById(categoryId).orElseThrow(() -> new CategoryNotFoundException("Category with id " + categoryId + " Not Found"));
 
-        if(minPrice >  maxPrice){
+        if (minPrice > maxPrice) {
             throw new IllegalArgumentException("Minimum price cannot be greater than maximum price");
         }
         List<Product> products = productRepository.findByCategoryIdAndPriceBetween(categoryId, minPrice, maxPrice);
@@ -313,7 +342,8 @@ public class ProductServiceImpl implements ProductService {
                 product.getStockQuantity(),
                 product.getImageUrl(),
                 product.getCategory().getId(),
-                product.getCategory().getName()
+                product.getCategory().getName(),
+                calculateAverageRating(product.getId())
         )).toList();
     }
 

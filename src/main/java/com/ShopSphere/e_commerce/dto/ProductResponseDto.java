@@ -27,4 +27,6 @@ public class ProductResponseDto {
 
     private String categoryName;
 
+    private Double averageRating;
+
 }
