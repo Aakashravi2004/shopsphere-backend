@@ -102,4 +102,9 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<> (e.getMessage(), HttpStatus.CONFLICT);
     }
 
+    @ExceptionHandler(AddressNotFoundException.class)
+    public ResponseEntity<String> handleAddressNotFoundException(AddressNotFoundException e){
+        return new ResponseEntity<> (e.getMessage(), HttpStatus.NOT_FOUND);
+    }
+
 }
