@@ -26,6 +26,10 @@ public class Order {
     @JoinColumn(name = "user_id")
     private User user;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "address_id")
+    private Address deliveryAddress;
+
     private Double totalPrice;
 
     @Enumerated(EnumType.STRING)

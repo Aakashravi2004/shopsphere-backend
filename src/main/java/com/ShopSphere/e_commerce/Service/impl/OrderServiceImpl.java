@@ -2,13 +2,11 @@ package com.ShopSphere.e_commerce.Service.impl;
 
 import com.ShopSphere.e_commerce.Entity.*;
 import com.ShopSphere.e_commerce.Enum.OrderStatus;
-import com.ShopSphere.e_commerce.Exception.CartEmptyException;
-import com.ShopSphere.e_commerce.Exception.CartNotFoundException;
-import com.ShopSphere.e_commerce.Exception.OrderNotFoundException;
-import com.ShopSphere.e_commerce.Exception.UserNotFoundException;
+import com.ShopSphere.e_commerce.Exception.*;
 import com.ShopSphere.e_commerce.Repository.*;
 import com.ShopSphere.e_commerce.Service.OrderService;
 import com.ShopSphere.e_commerce.dto.OrderItemResponseDto;
+import com.ShopSphere.e_commerce.dto.OrderRequestDto;
 import com.ShopSphere.e_commerce.dto.OrderResponseDto;
 import jakarta.transaction.Transactional;
 import org.springframework.security.core.Authentication;
@@ -27,23 +25,28 @@ public class OrderServiceImpl implements OrderService {
     private final CartRepository cartRepository;
     private final CartItemRepository cartItemRepository;
     private final ProductRepository productRepository;
+    private final AddressRepository addressRepository;
 
-    public OrderServiceImpl(OrderRepository orderRepository, UserRepository userRepository,  CartRepository cartRepository, CartItemRepository cartItemRepository,  ProductRepository productRepository) {
+    public OrderServiceImpl(OrderRepository orderRepository, UserRepository userRepository,  CartRepository cartRepository, CartItemRepository cartItemRepository,  ProductRepository productRepository,  AddressRepository addressRepository) {
         this.orderRepository = orderRepository;
         this.userRepository = userRepository;
         this.cartRepository = cartRepository;
         this.cartItemRepository = cartItemRepository;
         this.productRepository = productRepository;
+        this.addressRepository = addressRepository;
     }
 
     @Override
-    public OrderResponseDto placeOrder() {
+    public OrderResponseDto placeOrder(OrderRequestDto orderRequestDto) {
 
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String email = authentication.getName();
 
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UserNotFoundException("User with email " + email + " not found"));
+
+        Address address = addressRepository.findByIdAndUser(orderRequestDto.getAddressId(), user)
+                .orElseThrow(() -> new AddressNotFoundException("Address not found"));
 
         Cart cart = cartRepository.findByUserId(user.getId())
                 .orElseThrow(() -> new CartNotFoundException("Cart with id " + user.getId() + " not found"));
@@ -56,6 +59,7 @@ public class OrderServiceImpl implements OrderService {
 
         Order order = new Order();
         order.setUser(user);
+        order.setDeliveryAddress(address);
         order.setOrderStatus(OrderStatus.PENDING);
         order.setOrderDate(LocalDateTime.now());
 

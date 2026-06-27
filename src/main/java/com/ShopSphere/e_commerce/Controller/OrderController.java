@@ -2,6 +2,7 @@ package com.ShopSphere.e_commerce.Controller;
 
 import com.ShopSphere.e_commerce.Enum.OrderStatus;
 import com.ShopSphere.e_commerce.Service.OrderService;
+import com.ShopSphere.e_commerce.dto.OrderRequestDto;
 import com.ShopSphere.e_commerce.dto.OrderResponseDto;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -19,8 +20,8 @@ public class OrderController {
     }
 
     @PostMapping("/place")
-    public ResponseEntity<OrderResponseDto> placeOrder(){
-        return ResponseEntity.ok(orderService.placeOrder());
+    public ResponseEntity<OrderResponseDto> placeOrder(@RequestBody OrderRequestDto orderRequestDto) {
+        return ResponseEntity.ok(orderService.placeOrder(orderRequestDto));
     }
 
     @GetMapping
