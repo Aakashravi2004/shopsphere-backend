@@ -11,7 +11,6 @@ public interface OrderService {
 
     OrderResponseDto placeOrder(OrderRequestDto orderRequestDto);
     List<OrderResponseDto> getMyOrders();
-    OrderResponseDto payOrder(Long orderId);
     OrderResponseDto getOrderById(Long orderId);
     OrderResponseDto cancelOrder(Long orderId);
 

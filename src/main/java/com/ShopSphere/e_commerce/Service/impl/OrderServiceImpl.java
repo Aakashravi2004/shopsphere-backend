@@ -2,6 +2,7 @@ package com.ShopSphere.e_commerce.Service.impl;
 
 import com.ShopSphere.e_commerce.Entity.*;
 import com.ShopSphere.e_commerce.Enum.OrderStatus;
+import com.ShopSphere.e_commerce.Enum.PaymentStatus;
 import com.ShopSphere.e_commerce.Exception.*;
 import com.ShopSphere.e_commerce.Repository.*;
 import com.ShopSphere.e_commerce.Service.OrderService;
@@ -26,17 +27,20 @@ public class OrderServiceImpl implements OrderService {
     private final CartItemRepository cartItemRepository;
     private final ProductRepository productRepository;
     private final AddressRepository addressRepository;
+    private final PaymentRepository paymentRepository;
 
-    public OrderServiceImpl(OrderRepository orderRepository, UserRepository userRepository,  CartRepository cartRepository, CartItemRepository cartItemRepository,  ProductRepository productRepository,  AddressRepository addressRepository) {
+    public OrderServiceImpl(OrderRepository orderRepository, UserRepository userRepository,  CartRepository cartRepository, CartItemRepository cartItemRepository,  ProductRepository productRepository,  AddressRepository addressRepository, PaymentRepository paymentRepository) {
         this.orderRepository = orderRepository;
         this.userRepository = userRepository;
         this.cartRepository = cartRepository;
         this.cartItemRepository = cartItemRepository;
         this.productRepository = productRepository;
         this.addressRepository = addressRepository;
+        this.paymentRepository = paymentRepository;
     }
 
     @Override
+    @Transactional
     public OrderResponseDto placeOrder(OrderRequestDto orderRequestDto) {
 
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -89,6 +93,14 @@ public class OrderServiceImpl implements OrderService {
         order.setTotalPrice(totalPrice);
 
         Order savedOrder = orderRepository.save(order);
+
+        Payment payment = new Payment();
+        payment.setOrder(savedOrder);
+        payment.setUser(user);
+        payment.setAmount(savedOrder.getTotalPrice());
+        payment.setPaymentStatus(PaymentStatus.PENDING);
+
+        paymentRepository.save(payment);
 
         List<OrderItemResponseDto> itemDtos = savedOrder.getOrderItems().stream()
                 .map(orderItem -> {
@@ -147,82 +159,6 @@ public class OrderServiceImpl implements OrderService {
 
                 }).toList();
 
-    }
-
-    @Override
-    @Transactional
-    public OrderResponseDto payOrder(Long orderId){
-
-        // step 1 : get LoggedIn User
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String email = authentication.getName();
-
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new UserNotFoundException("User with email " + email + " not found"));
-
-        //step 2 : find order
-        Order order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new OrderNotFoundException("Order with id " + orderId + " not found"));
-
-        // step 3 : Verify Owner
-        // User A should not pay User B's order.
-        if(!order.getUser().getId().equals(user.getId())){
-            throw new OrderNotFoundException("Order does not belong to this user");
-        }
-
-        // step 4 : Already Paid Check
-        if(order.getOrderStatus() !=  OrderStatus.PENDING){
-            throw  new IllegalStateException("Only PENDING orders can be paid");
-        }
-
-        // step 5 : stock Management
-        for(OrderItem item :  order.getOrderItems()) {
-
-            Product product = item.getProduct();
-            if(item.getQuantity() > product.getStockQuantity()){
-                throw new IllegalStateException(product.getName() + " has only " + product.getStockQuantity() + " items available");
-            }
-
-            int remainingStock = product.getStockQuantity() - item.getQuantity();
-            product.setStockQuantity(remainingStock);
-            productRepository.save(product);
-        }
-
-        // step 6 : Update Status
-        order.setOrderStatus(OrderStatus.PAID);
-
-        // step 7 : save
-        Order savedOrder = orderRepository.save(order);
-
-        // step 8 : fetch the cart to delete because after payment become paid we need to remove cart items
-        Cart cart = cartRepository.findByUserId(user.getId())
-                .orElseThrow(() -> new CartNotFoundException("Cart with id " + user.getId() + " not found"));
-
-        // step 9 : fetch cartItems
-        List<CartItem> cartItems = cartItemRepository.findByCart(cart);
-
-        // step 10 : delete the cartItems
-        cartItemRepository.deleteAll(cartItems);
-
-        List<OrderItemResponseDto> itemDtos = savedOrder.getOrderItems().stream()
-                .map(orderItem -> {
-                    Double subtotal = orderItem.getPrice()*orderItem.getQuantity();
-                    return  new  OrderItemResponseDto(
-                            orderItem.getProduct().getId(),
-                            orderItem.getProduct().getName(),
-                            orderItem.getPrice(),
-                            orderItem.getQuantity(),
-                            subtotal
-                    );
-                }).toList();
-
-        return new OrderResponseDto(
-                savedOrder.getId(),
-                savedOrder.getTotalPrice(),
-                savedOrder.getOrderStatus(),
-                savedOrder.getOrderDate(),
-                itemDtos
-        );
     }
 
     @Override
