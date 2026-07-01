@@ -13,4 +13,6 @@ public interface PaymentService {
 
     PaymentResponseDto getPaymentById(Long paymentId);
 
+    PaymentResponseDto refundOrder(Long orderId);
+
 }

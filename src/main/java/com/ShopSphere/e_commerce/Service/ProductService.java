@@ -4,6 +4,7 @@ import com.ShopSphere.e_commerce.dto.ProductPatchRequestDto;
 import com.ShopSphere.e_commerce.dto.ProductRequestDto;
 import com.ShopSphere.e_commerce.dto.ProductResponseDto;
 import org.springframework.data.domain.Page;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -19,5 +20,6 @@ public interface ProductService {
     Page<ProductResponseDto> searchProducts(String keyword, int page, int size, String sortBy, String sortOrder);
     List<ProductResponseDto> filterProductsByPriceBetween(Double minPrice, Double maxPrice);
     List<ProductResponseDto> filterProductsByCategoryAndPriceBetween(Long categoryId, Double minPrice, Double maxPrice);
+    ProductResponseDto uploadProductImage(Long productId, MultipartFile file);
 
 }

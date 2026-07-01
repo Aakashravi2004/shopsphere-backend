@@ -9,6 +9,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -88,6 +89,15 @@ public class ProductController {
     @GetMapping("/filter/category")
     public ResponseEntity<List<ProductResponseDto>> filterProductsByCategory(@RequestParam Long categoryId, @RequestParam Double minPrice, @RequestParam Double maxPrice) {
         return ResponseEntity.ok(productService.filterProductsByCategoryAndPriceBetween(categoryId, minPrice, maxPrice));
+    }
+
+    @PostMapping("/{productId}/image")
+    public ResponseEntity<ProductResponseDto> uploadProductImage(
+            @PathVariable Long productId,
+            @RequestParam("file") MultipartFile file) {
+
+        return ResponseEntity.ok(
+                productService.uploadProductImage(productId, file));
     }
 
 

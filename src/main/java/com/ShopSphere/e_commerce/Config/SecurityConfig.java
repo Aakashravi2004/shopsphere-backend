@@ -23,7 +23,7 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http.csrf(csrf -> csrf.disable());
         http.authorizeHttpRequests(auth -> auth.requestMatchers("/api/users/register").permitAll()
-                .requestMatchers("/api/users/login").permitAll().anyRequest().authenticated());
+                .requestMatchers("/api/users/login").permitAll().requestMatchers( "/uploads/**").permitAll().anyRequest().authenticated());
 
         http.addFilterBefore(
                 jwtFilter,

@@ -34,5 +34,13 @@ public class PaymentController {
         return ResponseEntity.ok(paymentService.getPaymentById(paymentId));
     }
 
+    @PatchMapping("/{orderId}/refund")
+    public ResponseEntity<PaymentResponseDto> refundOrder(
+            @PathVariable Long orderId) {
+
+        return ResponseEntity.ok(
+                paymentService.refundOrder(orderId));
+    }
+
 }
 

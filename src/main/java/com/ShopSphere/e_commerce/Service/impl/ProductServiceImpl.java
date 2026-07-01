@@ -15,18 +15,29 @@ import com.ShopSphere.e_commerce.Service.ReviewService;
 import com.ShopSphere.e_commerce.dto.ProductPatchRequestDto;
 import com.ShopSphere.e_commerce.dto.ProductRequestDto;
 import com.ShopSphere.e_commerce.dto.ProductResponseDto;
+import jakarta.transaction.Transactional;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 @Service
 public class ProductServiceImpl implements ProductService {
+
+    @Value("${file.upload-dir}")
+    private String uploadDir;
 
     private final ProductRepository productRepository;
     private final CategoryRepository categoryRepository;
@@ -329,6 +340,56 @@ public class ProductServiceImpl implements ProductService {
                 product.getCategory().getName(),
                 ratingService.calculateAverageRating(product.getId())
         )).toList();
+    }
+
+    @Override
+    @Transactional
+    public ProductResponseDto uploadProductImage(Long productId, MultipartFile file){
+
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new ProductNotFoundException("Product with id " + productId + " Not Found"));
+
+        if(file.isEmpty()){
+            throw new IllegalArgumentException("Please select an image");
+        }
+
+        Path uploadPath = Paths.get(uploadDir);
+
+        try {
+            Files.createDirectories(uploadPath);
+        } catch (IOException e) {
+            throw new RuntimeException("Could not create upload directory", e);
+        }
+
+        String originalFileName =
+                Objects.requireNonNull(file.getOriginalFilename());
+
+        String fileName =
+                System.currentTimeMillis() + "_" + originalFileName;
+
+        Path filePath = uploadPath.resolve(fileName);
+
+        try {
+            Files.copy(file.getInputStream(), filePath);
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to upload image", e);
+        }
+
+        product.setImageUrl("/uploads/" + fileName);
+
+        Product savedProduct = productRepository.save(product);
+
+        return new ProductResponseDto(
+                savedProduct.getId(),
+                savedProduct.getName(),
+                savedProduct.getDescription(),
+                savedProduct.getPrice(),
+                savedProduct.getStockQuantity(),
+                savedProduct.getImageUrl(),
+                savedProduct.getCategory().getId(),
+                savedProduct.getCategory().getName(),
+                ratingService.calculateAverageRating(savedProduct.getId())
+        );
     }
 
 }

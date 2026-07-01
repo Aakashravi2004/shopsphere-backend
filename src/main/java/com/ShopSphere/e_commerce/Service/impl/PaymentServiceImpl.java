@@ -165,7 +165,69 @@ public class PaymentServiceImpl implements PaymentService {
                 payment.getTransactionId(),
                 payment.getPaymentDate()
         );
+    }
 
+    @Override
+    @Transactional
+    public PaymentResponseDto refundOrder(Long orderId){
+
+        // step 1 : Authentication
+        Authentication authentication =
+                SecurityContextHolder.getContext().getAuthentication();
+        String email = authentication.getName();
+
+        //step 2 : find User
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new  UserNotFoundException("User with email " + email + " not found"));
+
+        //step 3 : find the order based on user and orderId
+        Order order = orderRepository.findByIdAndUser(orderId, user)
+                .orElseThrow(() -> new  OrderNotFoundException("Order With Id " + orderId + " Not Found"));
+
+        // step 4 : check weather the order is paid or not
+        if(!OrderStatus.PAID.equals(order.getOrderStatus())){
+            throw new IllegalStateException("Only paid orders can be refunded");
+        }
+
+        // step 5 : if order paid find payment
+        Payment payment = paymentRepository.findByOrder(order)
+                .orElseThrow(() -> new  PaymentNotFoundException("Payment Not Found"));
+
+        // step 6 : check payment status success
+        if(!PaymentStatus.SUCCESS.equals(payment.getPaymentStatus())){
+            throw new IllegalStateException("Only successful payments can be refunded");
+        }
+
+        // step 7 : restore the stock
+        for(OrderItem item : order.getOrderItems()) {
+            Product product = item.getProduct();
+            int incrementingStock = product.getStockQuantity() + item.getQuantity();
+            product.setStockQuantity(incrementingStock);
+            productRepository.save(product);
+        }
+
+        //step 7 : modify new entity status in paymentStatus
+        payment.setPaymentStatus(PaymentStatus.REFUNDED);
+
+        //step 8 : modify new entity status in orderStatus
+        order.setOrderStatus(OrderStatus.REFUNDED);
+
+        // step 9 : save the payment to modify the changes in db
+        Payment savedPayment = paymentRepository.save(payment);
+
+        // step 10: save the order
+        orderRepository.save(order);
+
+        //Step 11 : return response
+        return new PaymentResponseDto(
+                savedPayment.getId(),
+                savedPayment.getOrder().getId(),
+                savedPayment.getAmount(),
+                savedPayment.getPaymentMethod(),
+                savedPayment.getPaymentStatus(),
+                savedPayment.getTransactionId(),
+                savedPayment.getPaymentDate()
+        );
 
     }
 
